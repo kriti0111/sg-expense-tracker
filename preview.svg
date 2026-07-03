@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" font-family="'DM Sans','Segoe UI',system-ui,sans-serif">
+  <!-- app background -->
+  <rect width="1000" height="600" rx="14" fill="#F7F6F3"/>
+  <rect x="0.5" y="0.5" width="999" height="599" rx="14" fill="none" stroke="#D6D4CC"/>
+
+  <!-- header -->
+  <text x="36" y="52" font-family="'DM Mono',ui-monospace,monospace" font-size="20" fill="#1A1917">// expense tracker</text>
+  <text x="240" y="52" font-size="12" fill="#A8A79F">12 months · saved in browser</text>
+  <text x="892" y="52" font-size="12" fill="#2D7A4F">AI: on</text>
+  <line x1="36" y1="70" x2="964" y2="70" stroke="#D6D4CC"/>
+
+  <!-- tabs -->
+  <text x="36" y="100" font-size="13" font-weight="500" fill="#1A1917">Overview</text>
+  <rect x="34" y="110" width="66" height="2" fill="#1A1917"/>
+  <text x="122" y="100" font-size="13" fill="#6B6A65">Month</text>
+  <text x="186" y="100" font-size="13" fill="#6B6A65">Transactions</text>
+  <text x="290" y="100" font-size="13" fill="#6B6A65">Upload</text>
+
+  <!-- reconciliation banner (the signature feature) -->
+  <rect x="36" y="126" width="928" height="66" rx="12" fill="#DCF0D0" stroke="#8DCF6A"/>
+  <text x="54" y="150" font-size="13" fill="#6B6A65">Statement Total Due</text>
+  <text x="946" y="150" font-size="13" font-family="'DM Mono',monospace" fill="#6B6A65" text-anchor="end">S$1,240.00</text>
+  <text x="54" y="170" font-size="13" fill="#6B6A65">Captured (OCR)</text>
+  <text x="946" y="170" font-size="13" font-family="'DM Mono',monospace" fill="#6B6A65" text-anchor="end">S$1,240.00</text>
+  <text x="54" y="186" font-size="13.5" font-weight="600" fill="#1E5C0F">✓ Reconciled — every transaction accounted for</text>
+  <text x="946" y="186" font-size="14" font-weight="600" font-family="'DM Mono',monospace" fill="#1E5C0F" text-anchor="end">S$0.00</text>
+
+  <!-- metric cards -->
+  <g font-family="'DM Sans',sans-serif">
+    <rect x="36" y="212" width="223" height="86" rx="12" fill="#EFEFEA" stroke="#E4E2DB"/>
+    <text x="52" y="238" font-size="10.5" letter-spacing="0.6" fill="#A8A79F">EXPENSES</text>
+    <text x="52" y="278" font-size="26" font-family="'DM Mono',monospace" fill="#1A1917">S$1,240</text>
+
+    <rect x="271" y="212" width="223" height="86" rx="12" fill="#EFEFEA" stroke="#E4E2DB"/>
+    <text x="287" y="238" font-size="10.5" letter-spacing="0.6" fill="#A8A79F">INCOME</text>
+    <text x="287" y="278" font-size="26" font-family="'DM Mono',monospace" fill="#1A1917">S$8,214</text>
+
+    <rect x="506" y="212" width="223" height="86" rx="12" fill="#EFEFEA" stroke="#E4E2DB"/>
+    <text x="522" y="238" font-size="10.5" letter-spacing="0.6" fill="#A8A79F">INVESTED</text>
+    <text x="522" y="278" font-size="26" font-family="'DM Mono',monospace" fill="#1A1917">S$1,200</text>
+
+    <rect x="741" y="212" width="223" height="86" rx="12" fill="#EFEFEA" stroke="#E4E2DB"/>
+    <text x="757" y="238" font-size="10.5" letter-spacing="0.6" fill="#A8A79F">VS LAST MONTH</text>
+    <text x="757" y="278" font-size="26" font-family="'DM Mono',monospace" fill="#2D7A4F">+4.2%</text>
+  </g>
+
+  <!-- monthly trend (bar chart) -->
+  <rect x="36" y="316" width="560" height="248" rx="12" fill="#FFFFFF" stroke="#E4E2DB"/>
+  <text x="54" y="342" font-size="10.5" letter-spacing="0.6" fill="#A8A79F">MONTHLY SPENDING TREND</text>
+  <!-- axis -->
+  <line x1="70" y1="530" x2="576" y2="530" stroke="#E4E2DB"/>
+  <!-- bars: 4 months, income (green) + expenses (red) -->
+  <g>
+    <rect x="96"  y="404" width="26" height="126" rx="3" fill="#2D7A4F"/>
+    <rect x="126" y="454" width="26" height="76"  rx="3" fill="#C0392B"/>
+    <rect x="222" y="392" width="26" height="138" rx="3" fill="#2D7A4F"/>
+    <rect x="252" y="446" width="26" height="84"  rx="3" fill="#C0392B"/>
+    <rect x="348" y="410" width="26" height="120" rx="3" fill="#2D7A4F"/>
+    <rect x="378" y="438" width="26" height="92"  rx="3" fill="#C0392B"/>
+    <rect x="474" y="386" width="26" height="144" rx="3" fill="#2D7A4F"/>
+    <rect x="504" y="450" width="26" height="80"  rx="3" fill="#C0392B"/>
+  </g>
+  <g font-size="11" fill="#A8A79F" text-anchor="middle">
+    <text x="124" y="548">Mar</text>
+    <text x="250" y="548">Apr</text>
+    <text x="376" y="548">May</text>
+    <text x="502" y="548">Jun</text>
+  </g>
+  <g font-size="11">
+    <rect x="430" y="334" width="9" height="9" rx="2" fill="#2D7A4F"/><text x="444" y="342" fill="#6B6A65">Income</text>
+    <rect x="508" y="334" width="9" height="9" rx="2" fill="#C0392B"/><text x="522" y="342" fill="#6B6A65">Expenses</text>
+  </g>
+
+  <!-- category donut -->
+  <rect x="612" y="316" width="352" height="248" rx="12" fill="#FFFFFF" stroke="#E4E2DB"/>
+  <text x="630" y="342" font-size="10.5" letter-spacing="0.6" fill="#A8A79F">SPEND BY CATEGORY</text>
+  <g transform="translate(716,446)">
+    <!-- donut segments via stroked circle arcs (r=64, circumference ~402) -->
+    <circle r="64" fill="none" stroke="#D8F2E6" stroke-width="26" stroke-dasharray="120 282" transform="rotate(-90)"/>
+    <circle r="64" fill="none" stroke="#D6E8F8" stroke-width="26" stroke-dasharray="96 306" stroke-dashoffset="-120" transform="rotate(-90)"/>
+    <circle r="64" fill="none" stroke="#FAE8D2" stroke-width="26" stroke-dasharray="80 322" stroke-dashoffset="-216" transform="rotate(-90)"/>
+    <circle r="64" fill="none" stroke="#C8EEE0" stroke-width="26" stroke-dasharray="60 342" stroke-dashoffset="-296" transform="rotate(-90)"/>
+    <circle r="64" fill="none" stroke="#E8E6FA" stroke-width="26" stroke-dasharray="46 356" stroke-dashoffset="-356" transform="rotate(-90)"/>
+  </g>
+  <g font-size="11.5" fill="#6B6A65">
+    <rect x="824" y="392" width="10" height="10" rx="2" fill="#D8F2E6"/><text x="840" y="401">Food</text>
+    <rect x="824" y="414" width="10" height="10" rx="2" fill="#D6E8F8"/><text x="840" y="423">Transport</text>
+    <rect x="824" y="436" width="10" height="10" rx="2" fill="#FAE8D2"/><text x="840" y="445">Shopping</text>
+    <rect x="824" y="458" width="10" height="10" rx="2" fill="#C8EEE0"/><text x="840" y="467">Grocery</text>
+    <rect x="824" y="480" width="10" height="10" rx="2" fill="#E8E6FA"/><text x="840" y="489">Utilities</text>
+  </g>
+</svg>
