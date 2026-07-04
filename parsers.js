@@ -44,6 +44,10 @@ function categorise(desc,type){
 // ── DBS type detection ────────────────────────────────────────────────────────
 function detectDBSType(desc,isWithdrawal){
   const d=desc.toLowerCase();
+  // Dividends (e.g. "DIV:IA-UOB KAY HIAN") are always income — check before
+  // anything else so the "uob kay hian → investment" withdrawal rule can't
+  // misclassify a dividend deposit as an investment outflow.
+  if(d.includes('div:')||d.includes('dividend')) return 'income';
   if(!isWithdrawal){
     if(d.includes('giro salary')) return 'income';
     if(d.includes('interest')||d.includes('int pymt')) return 'income';
@@ -145,7 +149,7 @@ function parseDBS(text,source){
     const skip=['balance brought','balance carried','total balance','opening balance','closing balance'];
     if(skip.some(s=>desc.toLowerCase().includes(s))) continue;
     const descL=desc.toLowerCase();
-    const isDeposit=['incoming','giro salary','interest','int pymt','digiportfolio','from:','from '].some(k=>descL.includes(k));
+    const isDeposit=['incoming','giro salary','interest','int pymt','digiportfolio','div:','dividend','from:','from '].some(k=>descL.includes(k));
     const type=detectDBSType(desc,!isDeposit);
     if(type===null) continue;
     if(isDeposit&&skipPeople.some(n=>descL.includes(n))) continue;
