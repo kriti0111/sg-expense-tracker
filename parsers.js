@@ -52,13 +52,19 @@ function detectDBSType(desc,isWithdrawal){
     if(d.includes('giro salary')) return 'income';
     if(d.includes('interest')||d.includes('int pymt')) return 'income';
     if(d.includes('digiportfolio')) return 'income';
+    // Incoming PayNow/FAST from individuals = transfer inflow (usually a
+    // reimbursement — the original spend was already counted, so this must
+    // be visible on the books but never counted as income).
+    if(d.includes('incoming')||d.includes('paynow')||d.includes('fast payment')) return 'transfer';
     return null;
   }
   if(d.includes('nium pte')) return 'expense';
   if(d.includes('paylah')||d.includes('top-up to paylah')) return 'transfer';
   if(d.includes('uob kay hian')||d.includes('endowus')||d.includes('digiportfolio purchase')) return 'investment';
   if(d.includes('supplementary retirement')||d.includes('buy fund mgt')||d.trim()==='contribution'||d.includes('srs contribution')) return 'investment';
-  if((d.includes('giro standing')||d.includes('giro '))&&(d.includes('multiplier')||d.includes('autosave'))) return null;
+  // Standing instructions between own accounts (REF:SI / PART/REF:SI) are
+  // internal moves, not spending — exclude both legs.
+  if((d.includes('giro standing')||d.includes('giro '))&&(d.includes('ref:si')||d.includes('multiplier')||d.includes('autosave'))) return null;
   if(d.includes('ccc -')||d.includes('i-bank')) return null;
   if(d.includes('paynow')||d.includes('fast payment')||d.includes('fast transfer')) return 'transfer';
   return 'expense';
@@ -116,7 +122,6 @@ function parseHSBC(text,source){
 // ── DBS Parser ────────────────────────────────────────────────────────────────
 function parseDBS(text,source){
   const rows=[];
-  const skipPeople=[];
   let full=text
     .replace(/VALUE DATE\s*:\s*\d{2}\/\d{2}\/\d{4}/gi,'')
     .replace(/\n/g,' ')
@@ -152,7 +157,6 @@ function parseDBS(text,source){
     const isDeposit=['incoming','giro salary','interest','int pymt','digiportfolio','div:','dividend','from:','from '].some(k=>descL.includes(k));
     const type=detectDBSType(desc,!isDeposit);
     if(type===null) continue;
-    if(isDeposit&&skipPeople.some(n=>descL.includes(n))) continue;
     const flow=isDeposit?'inflow':'outflow';
     const month_year=dbsMonthYear(date);
     rows.push({date,description:desc,amount,type,flow,category:categorise(desc,type),source,month_year});
