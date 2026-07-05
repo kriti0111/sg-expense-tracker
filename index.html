@@ -604,10 +604,10 @@ function editPreview(i,field,val){
     if(!isNaN(n)) r.amount=Math.abs(n);
   } else if(field==='category'){
     r.category=val;
-    saveCorrection(r.description,val); // learn from preview corrections too
-    // Keep type/flow consistent when switching to/from income.
-    if(val==='income'){r.type='income';r.flow='inflow';}
-    else if(r.type==='income'){r.type='expense';r.flow='outflow';}
+    r.type=typeForCategory(val);
+    if(r.type==='income') r.flow='inflow';
+    else if(r.type!=='transfer') r.flow='outflow'; // transfers keep their parsed direction
+    saveCorrection(r); // learn from preview corrections too
   } else {
     r[field]=val;
   }
@@ -973,7 +973,10 @@ function renderTransactions(){
       <td class="mono" style="font-size:12px;white-space:nowrap;">${r.date}</td>
       <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.description}">${r.description}</td>
       <td class="mono" style="color:${r.flow==='inflow'?'var(--green)':r.type==='investment'?'var(--blue)':'var(--text)'}">S$${r.amount.toFixed(2)}</td>
-      <td>${flowBadge(r.flow,r.type)}</td>
+      <td><select data-id="${r.id}" onchange="updateFlow(this)" style="font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:${r.flow==='inflow'?'var(--green)':'var(--red)'};">
+        <option value="outflow"${r.flow==='outflow'?' selected':''}>↓ outflow</option>
+        <option value="inflow"${r.flow==='inflow'?' selected':''}>↑ inflow</option>
+      </select></td>
       <td><select data-id="${r.id}" onchange="updateCat(this)" style="font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);">
         ${cats.map(c=>`<option value="${c}"${c===r.category?' selected':''}>${c}</option>`).join('')}
       </select></td>
@@ -986,9 +989,21 @@ async function updateCat(sel){
   const r=DB.find(r=>r.id===sel.dataset.id);
   if(!r) return;
   r.category=sel.value;
-  await idb.putMany([r]);          // auto-save immediately — no Save button needed
-  saveCorrection(r.description,sel.value); // learn: future parses categorise this merchant correctly
-  showAlert('txAlert',`Saved — "${normMerchant(r.description)}" will be categorised as ${sel.value} from now on.`,'ok');
+  r.type=typeForCategory(sel.value);      // e.g. remittance → expense type (counts as spending)
+  if(r.type==='income') r.flow='inflow';
+  await idb.putMany([r]);                 // auto-save immediately — no Save button needed
+  saveCorrection(r);                      // learn: future parses classify this merchant the same way
+  showAlert('txAlert',`Saved — "${normMerchant(r.description)}" will be ${sel.value} (${r.flow}) from now on.`,'ok');
+  renderTransactions();                   // re-render so the flow dropdown reflects the derived type
+}
+
+async function updateFlow(sel){
+  const r=DB.find(r=>r.id===sel.dataset.id);
+  if(!r) return;
+  r.flow=sel.value;
+  await idb.putMany([r]);
+  saveCorrection(r);
+  showAlert('txAlert',`Saved — "${normMerchant(r.description)}" marked ${sel.value}. Future statements will match.`,'ok');
 }
 
 async function deleteSelected(){
@@ -1032,10 +1047,16 @@ const CAT_FIX_STORE='cat_corrections_v1';
 // "BUS/MRT 857019641 SINGAPORE SG" learn as the same merchant.
 function normMerchant(d){return (d||'').toLowerCase().replace(/\d+/g,'').replace(/\s+/g,' ').trim();}
 function getCorrections(){try{return JSON.parse(localStorage.getItem(CAT_FIX_STORE)||'{}');}catch{return{};}}
-function saveCorrection(desc,cat){
-  const k=normMerchant(desc);
+// Category implies the accounting type: remittance/food/etc are expenses.
+function typeForCategory(cat){
+  return cat==='income'?'income':cat==='investment'?'investment':cat==='transfer'?'transfer':'expense';
+}
+// Remember the row's full classification (category + type + flow) per merchant.
+function saveCorrection(row){
+  const k=normMerchant(row.description);
   if(!k) return;
-  const c=getCorrections();c[k]=cat;
+  const c=getCorrections();
+  c[k]={category:row.category,type:row.type,flow:row.flow};
   try{localStorage.setItem(CAT_FIX_STORE,JSON.stringify(c));}catch{}
 }
 function applyCorrections(rows){
@@ -1043,7 +1064,12 @@ function applyCorrections(rows){
   let n=0;
   for(const r of rows){
     const fix=c[normMerchant(r.description)];
-    if(fix&&r.category!==fix){r.category=fix;n++;}
+    if(!fix) continue;
+    if(typeof fix==='string'){ // legacy entries stored category only
+      if(r.category!==fix){r.category=fix;n++;}
+    } else if(r.category!==fix.category||r.type!==fix.type||r.flow!==fix.flow){
+      r.category=fix.category;r.type=fix.type;r.flow=fix.flow;n++;
+    }
   }
   return n;
 }
