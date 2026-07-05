@@ -318,8 +318,8 @@ tr:hover td{background:var(--bg2);}
       </table>
     </div>
     <div class="tx-actions">
-      <button class="btn primary" onclick="saveEdits()">Save edits</button>
-      <button class="btn danger" onclick="deleteSelected()">Delete selected</button>
+      <span style="font-size:12px;color:var(--text3);align-self:center;">Category changes save automatically — and are remembered for future statements.</span>
+      <button class="btn danger" onclick="deleteSelected()" style="margin-left:auto;">Delete selected</button>
     </div>
   </div>
 
@@ -532,6 +532,8 @@ async function parseAll(){
   document.getElementById('pFill').style.width='100%';
   setTimeout(()=>document.getElementById('parseProgress').classList.add('hidden'),600);
   if(!parsed.length){showAlert('uploadAlert','No transactions found. The PDF may have no readable text (scanned/flattened) or an unrecognised layout. Try re-downloading the original statement.','err');return;}
+  // Learned corrections outrank keyword rules and the AI cache.
+  applyCorrections(parsed);
   const otherCount=parsed.filter(r=>r.category==='other').length;
   if(otherCount){
     document.getElementById('pStatus').textContent=`AI categorising ${otherCount} uncategorised transactions…`;
@@ -602,6 +604,7 @@ function editPreview(i,field,val){
     if(!isNaN(n)) r.amount=Math.abs(n);
   } else if(field==='category'){
     r.category=val;
+    saveCorrection(r.description,val); // learn from preview corrections too
     // Keep type/flow consistent when switching to/from income.
     if(val==='income'){r.type='income';r.flow='inflow';}
     else if(r.type==='income'){r.type='expense';r.flow='outflow';}
@@ -979,12 +982,13 @@ function renderTransactions(){
   tbody.innerHTML=html;
 }
 
-function updateCat(sel){const r=DB.find(r=>r.id===sel.dataset.id);if(r) r.category=sel.value;}
-
-async function saveEdits(){
-  await idb.putMany(DB);
-  showAlert('txAlert','Changes saved.','ok');
-  renderTrends();
+async function updateCat(sel){
+  const r=DB.find(r=>r.id===sel.dataset.id);
+  if(!r) return;
+  r.category=sel.value;
+  await idb.putMany([r]);          // auto-save immediately — no Save button needed
+  saveCorrection(r.description,sel.value); // learn: future parses categorise this merchant correctly
+  showAlert('txAlert',`Saved — "${normMerchant(r.description)}" will be categorised as ${sel.value} from now on.`,'ok');
 }
 
 async function deleteSelected(){
@@ -1019,6 +1023,30 @@ openDB().then(async()=>{
   document.getElementById('hdrStatus').textContent='IndexedDB error — try Chrome';
   console.error(e);
 });
+
+// ── Category corrections (learning from manual edits) ────────────────────────
+// Every manual category change is remembered by merchant and re-applied on all
+// future parses — corrections outrank both keyword rules and the AI cache.
+const CAT_FIX_STORE='cat_corrections_v1';
+// Normalise by stripping digits so "BUS/MRT 848908981 SINGAPORE SG" and
+// "BUS/MRT 857019641 SINGAPORE SG" learn as the same merchant.
+function normMerchant(d){return (d||'').toLowerCase().replace(/\d+/g,'').replace(/\s+/g,' ').trim();}
+function getCorrections(){try{return JSON.parse(localStorage.getItem(CAT_FIX_STORE)||'{}');}catch{return{};}}
+function saveCorrection(desc,cat){
+  const k=normMerchant(desc);
+  if(!k) return;
+  const c=getCorrections();c[k]=cat;
+  try{localStorage.setItem(CAT_FIX_STORE,JSON.stringify(c));}catch{}
+}
+function applyCorrections(rows){
+  const c=getCorrections();
+  let n=0;
+  for(const r of rows){
+    const fix=c[normMerchant(r.description)];
+    if(fix&&r.category!==fix){r.category=fix;n++;}
+  }
+  return n;
+}
 
 // ── Gemini AI categorisation ──────────────────────────────────────────────────
 const GEMINI_KEY_STORE='gemini_api_key';
