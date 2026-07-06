@@ -447,14 +447,20 @@ async function ocrPDF(pdf,onProgress){
   return pages.join('\n');
 }
 
-// Pull the statement's declared total (HSBC "Total Due") for reconciliation.
-// The grand total prints as "Total Due<spaces>1,107.93" on one line; the page-1
-// header has "Total Due  Minimum Payment ..." (letters follow) so requiring a
-// number to directly follow skips it. Take the last match = the grand total.
+// Pull the statement's declared charges total for reconciliation.
+// HSBC prints "Total Due<spaces>1,107.93"; the page-1 header has
+// "Total Due  Minimum Payment ..." (letters follow) so requiring a number to
+// directly follow skips it. Citibank prints charges as "SUB-TOTAL: 100.20"
+// (the credits section's subtotal is parenthesised, so digits-only skips it).
+// Take the last match in both cases = the charges grand total.
 function statementTotal(text){
-  const re=/total\s*due[ \t]+([\d,]+\.\d{2})/gi;
   let m,last=null;
-  while((m=re.exec(text))!==null) last=m[1];
+  const hsbc=/total\s*due[ \t]+([\d,]+\.\d{2})/gi;
+  while((m=hsbc.exec(text))!==null) last=m[1];
+  if(!last){
+    const citi=/SUB-?TOTAL:?\s*([\d,]+\.\d{2})/gi;
+    while((m=citi.exec(text))!==null) last=m[1];
+  }
   return last?parseFloat(last.replace(/,/g,'')):null;
 }
 

@@ -182,29 +182,47 @@ function parseCiti(text,source){
   const rows=[];
   const{stmtYear,stmtMonth}=citiDetectYear(text);
   let full=text.replace(/\n/g,' ').replace(/\s+/g,' ');
-  // Strip masked card number lines and balance/total lines before regex matching.
   full=full
     .replace(/XXXX-XXXX-XXXX-\d{4}/g,' ')
-    .replace(/BALANCE PREVIOUS STATEMENT\s+[-\d,.()]+/gi,' ')
-    .replace(/SUB-TOTAL:\s+[\d,.()]+/gi,' ')
-    .replace(/GRAND TOTAL\s+[\d,.]+/gi,' ')
+    // Char-spaced PDFs can glue an amount or a word to the next row's date
+    // ("30.0012 JUN", "CARDHOLDER11 JUN") — split them apart so dates are found.
+    .replace(/(\.\d{2})(\d{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b)/gi,'$1 $2')
+    .replace(/([A-Za-z])(\d{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\b)/gi,'$1 $2')
     .replace(/\s+/g,' ');
-  const re=/(\d{1,2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)) (.+?) ([\d,]+\.\d{2})(?=\s|$)/gi;
-  let m;
-  while((m=re.exec(full))!==null){
-    const[,date,rawDesc,amtStr]=m;
-    const amount=parseFloat(amtStr.replace(/,/g,''));
+  // Segment on transaction dates; a row's charge is the LAST amount before the
+  // next date (fee rows print a base amount then the fee: "...FEE SGD 30.00 0.30").
+  const MONS='Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
+  const dateRe=new RegExp(`\\b(\\d{1,2} (?:${MONS}))\\b`,'gi');
+  const marks=[];let dm;
+  while((dm=dateRe.exec(full))!==null) marks.push({date:dm[1],start:dm.index,end:dm.index+dm[0].length});
+  const repaymentTerms=['moneysend','payment received','payment thank you','autopay','giro','visa direct','dbs','uob','ocbc','hsbc','standard chartered'];
+  for(let i=0;i<marks.length;i++){
+    let seg=full.slice(marks[i].end, i+1<marks.length?marks[i+1].start:full.length);
+    // Truncate at statement-summary noise so points/balance figures ("S$1.00
+    // SPENDING = 1 POINT") can never be mistaken for a transaction amount.
+    seg=seg.split(/SUB-?TOTAL|GRAND\s*TOTAL|TOTAL FOR THE CARD|BALANCE PREVIOUS|YOUR CITI|Co Reg No|Page \d+ of|Important Announcements/i)[0].trim();
+    const amts=[...seg.matchAll(/\(?([\d,]+\.\d{2})\)?/g)];
+    if(!amts.length) continue;
+    const last=amts[amts.length-1];
+    const amount=parseFloat(last[1].replace(/,/g,''));
     if(amount<0.01) continue;
-    // Strip trailing location noise: "SINGAPORE SG" or bare "SG"
-    let desc=rawDesc
+    const isCredit=last[0].startsWith('(');
+    let desc=seg.slice(0,amts[0].index)
       .replace(/\s+singapore\s+sg\s*$/i,'')
       .replace(/\s+sg\s*$/i,'')
       .trim();
     if(!desc||desc.length<2) continue;
-    const skip=['date description','transactions for','all transactions','previous statement','sub-total','grand total','balance'];
+    const skip=['date description','transactions for','all transactions','previous statement','sub-total','grand total','balance','minimum payment','credit limit','statement date','payment due'];
     if(skip.some(s=>desc.toLowerCase().includes(s))) continue;
-    const month_year=citiMonthYear(date,stmtYear,stmtMonth);
-    rows.push({date,description:desc,amount,type:'expense',flow:'outflow',category:categorise(desc,'expense'),source,month_year});
+    const month_year=citiMonthYear(marks[i].date,stmtYear,stmtMonth);
+    if(isCredit){
+      // Parenthesised amounts are credits: repayments are excluded entirely;
+      // anything else (refunds) is kept as an inflow.
+      if(repaymentTerms.some(t=>desc.toLowerCase().includes(t))) continue;
+      rows.push({date:marks[i].date,description:desc,amount,type:'income',flow:'inflow',category:'income',source,month_year});
+    } else {
+      rows.push({date:marks[i].date,description:desc,amount,type:'expense',flow:'outflow',category:categorise(desc,'expense'),source,month_year});
+    }
   }
   return rows;
 }
