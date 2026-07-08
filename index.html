@@ -1034,6 +1034,10 @@ function switchTab(name,el){
 // ── Init ──────────────────────────────────────────────────────────────────────
 openDB().then(async()=>{
   DB=await idb.getAll();
+  // Self-heal: re-apply every learned correction to existing saved rows, so a
+  // merchant you corrected once is fixed across all past rows automatically.
+  const healed=applyCorrections(DB);
+  if(healed){await idb.putMany(DB);DB=await idb.getAll();}
   updateHeader();
   renderSidebar();
   selMonth=getMonths().slice(-1)[0]||'';
