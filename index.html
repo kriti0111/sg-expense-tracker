@@ -1036,7 +1036,12 @@ openDB().then(async()=>{
   DB=await idb.getAll();
   // Self-heal: re-apply every learned correction to existing saved rows, so a
   // merchant you corrected once is fixed across all past rows automatically.
-  const healed=applyCorrections(DB);
+  let healed=applyCorrections(DB);
+  // Repair legacy rows whose spending category doesn't match its type — an old
+  // category-only edit could leave type as 'transfer', so the charts (which sum
+  // by type) silently excluded the row even though it showed the right category.
+  const SPENDING_CATS=['grocery','food','transport','shopping','utilities','entertainment','health','travel','remittance'];
+  for(const r of DB){ if(SPENDING_CATS.includes(r.category)&&r.type!=='expense'){r.type='expense';healed++;} }
   if(healed){await idb.putMany(DB);DB=await idb.getAll();}
   updateHeader();
   renderSidebar();
